@@ -69,8 +69,38 @@ export const signup = async (req : Request , res: any)=> {
   }
 }
 
-export const login = async(req: Request, res: Response) => {
-  res.send("Login page");
+export const login = async(req: Request, res: any) => {
+  const {email, password} = req.body;
+
+  try {
+    if (!email || !password){
+        return res.status(400).json({message: "All field are required"});
+
+    }
+    const user = await User.findOne({email});
+    if(!user) {
+        return res.status(401).json({message: "Invalid email or password"})
+    }
+    const isPassowrdCorrect = await user.matchPassword(password);
+    if (!isPassowrdCorrect) {
+        return res.status(401).json({message: "Invalid email or password"})
+    }
+    const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET_KEY!, {
+        expiresIn: "1d"
+    })
+    res.cookie("jwt", token, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true, // prevent XSS attacks
+      sameSite: "strict", // prevent CSRF attacks
+      secure: process.env.NODE_ENV === "production",
+    })
+    res.status(200).json({
+        success: true,
+        user
+    })
+  } catch (error) {  
+    console.log
+  }
 }
 
 export const logout =(req: Request, res: Response) => {

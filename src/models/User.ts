@@ -64,6 +64,11 @@ userSchema.pre("save", async function (next) {
     }
   });
 
+  userSchema.methods.matchPassword = async function (entredPassword : string):Promise<boolean> {
+   return await bcrypt.compare(entredPassword, this.password);
+    
+  }
+
 const User = mongoose.model("User", userSchema);
 
 // pre hook
