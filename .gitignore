@@ -1,0 +1,5 @@
+*.env
+node_moduels/
+/node_moduels
+
+.env*
