@@ -1,6 +1,7 @@
 import { Request, RequestHandler, Response } from "express";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
+import { upsertStreamUser } from "../config/stream";
 
 export const signup = async (req : Request , res: any)=> {
   const { fullName, email, password } = req.body;
@@ -42,7 +43,17 @@ export const signup = async (req : Request , res: any)=> {
       profilePic: randomAvatar,
     });
 
-    // TODO: CREATE USER IN STREAM AS WELL
+   try {
+    await upsertStreamUser({
+      id: newUser._id,
+      name: newUser.fullName,
+      image: newUser.profilePic
+    })
+    console.log(`Stream user created ${newUser.fullName}`);
+   } catch (error: any) {
+    console.error("Error creating Stream user",error);
+    
+   }
 
     const token = jwt.sign(
       { userId: newUser._id },
@@ -81,8 +92,8 @@ export const login = async(req: Request, res: any) => {
     if(!user) {
         return res.status(401).json({message: "Invalid email or password"})
     }
-    const isPassowrdCorrect = await user.matchPassword(password);
-    if (!isPassowrdCorrect) {
+    const isPasswordCorrect = await (user as any).matchPassword(password);
+    if (!isPasswordCorrect) {
         return res.status(401).json({message: "Invalid email or password"})
     }
     const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET_KEY!, {
@@ -99,10 +110,12 @@ export const login = async(req: Request, res: any) => {
         user
     })
   } catch (error) {  
-    console.log
+    console.log("Error login in controller", error);
+    res.status(500).json({message: "Internal Server Error"})
   }
 }
 
 export const logout =(req: Request, res: Response) => {
-  res.send("Logout page");
+  res.clearCookie("jwt");
+  res.status(200).json({success: true, message: "Logout successful"})
 }
